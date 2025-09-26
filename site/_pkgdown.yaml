@@ -12,7 +12,7 @@ home:
 template:
   package: varnish
   params:
-    time: 2025-09-26 14:17:45 +0000
+    time: 2025-09-26 14:22:07 +0000
     source: https://github.com/carpentries/workbench-template-md
     branch: main
     contact: team@carpentries.org
