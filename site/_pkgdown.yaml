@@ -12,7 +12,7 @@ home:
 template:
   package: varnish
   params:
-    time: 2025-02-25 11:49:20 +0000
+    time: 2025-09-26 14:17:45 +0000
     source: https://github.com/carpentries/workbench-template-md
     branch: main
     contact: team@carpentries.org
@@ -40,7 +40,9 @@ template:
     keywords: software, data, lesson, The Carpentries
     pdf: yes
     ipynb: yes
-    episodes: 01-classification_intro.Rmd
+    episodes:
+    - 01-classification_intro.Rmd
+    - 02-improvement.Rmd
     learners: ~
     instructors: ~
     profiles: ~

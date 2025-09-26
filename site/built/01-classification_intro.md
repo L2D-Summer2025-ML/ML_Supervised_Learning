@@ -1028,94 +1028,31 @@ Feature 1: 61.6%; Feature 2: 38.4%
 
 In this case, the predictions are based on a 61% contribution from feature 1 and a 38% contribution from feature 2.
 
-## Application
+:::::::::::::::: callout
+## Note
+<p style='text-align: justify;'>
+It should be noted that the attribute `.feature_importances_` will not work if applied to a Multi-Layer Pereceptron (MLP) Classifier. This attribute actually only works with specific models such as random forest or decision trees.
 
-Now we pick the 'Height' and 'Weight' columns from the patients data to predict the gender labels. We use a split of 4/5 of the data for training and 1/5 for testing.
+We can, however, make use of a permutation-based feature importance measure for the MLP classifier, instead. This can be accessed using the function `.permutation_importance`, which measures the decrease in the model's performance, each time a specific feature is shuffled; effectively measuring its importance to the resulting prediction.
 
-
-``` python
-df = read_csv('data/patients_data.csv')
-
-print(df.shape)
-
-# Convert pounds to kg and inches to cm:
-df['Weight'] = 0.454*df['Weight']
-df['Height'] = 2.540*df['Height']
-
-df.head(10)
-```
-
-``` output
-(100, 8)
-   Age  Height  Weight  Systolic  Diastolic  Smoker  Gender  Peak Flow
-0   38  180.34  79.904       124         93       1    Male        200
-1   43  175.26  74.002       109         77       0    Male        615
-2   38  162.56  59.474       125         83       0  Female        642
-3   40  170.18  60.382       117         75       0  Female        511
-4   49  162.56  54.026       122         80       0  Female        497
-5   46  172.72  64.468       121         70       0  Female        528
-6   33  162.56  64.468       130         88       1  Female        269
-7   40  172.72  81.720       115         82       0    Male        324
-8   28  172.72  83.082       115         78       0    Male        501
-9   31  167.64  59.928       118         86       0  Female        723
-```
-
-
-### **Prepare training data and labels**
+This attribute is available within scikit-learn's inspection sub-library, and assuming you have a trained classifier stored in a variable, you could use it, as follows:
 
 
 ``` python
-# Extract data as numpy array
-df_np = df.to_numpy()
+from sklearn.neural_network import MLPClassifier
+from sklearn.inspection import permutation_importance
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
 
-# Pick a fraction of height and weight data as training data
-samples = 80
+# Load a simple dataset
+X, y = load_iris(return_X_y=True)
 
-X = df_np[:samples, [1, 2]]
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-print(X.shape)
-```
-
-(80, 2)
-
-For the labels of the training data we convert the 'Male' and 'Female' strings to categorical values.
-
-
-``` python
-gender_boolean = df['Gender'] == 'Female'
-
-y = gender_boolean[:80]
-
-# printed as 0 and 1:
-
-y.astype('int')
-```
-
-0     0
-1     0
-2     1
-3     1
-4     1
-     ..
-75    0
-76    1
-77    0
-78    0
-79    1
-Name: Gender, Length: 80, dtype: int64
-
-### **Train classifier and predict**
-
-
-
-``` python
-from sklearn.ensemble import RandomForestClassifier
-
-seed(RANDOM_SEED)
-
-clf = RandomForestClassifier(random_state=RANDOM_SEED)
-
-clf.fit(X, y)
+# Train a multi-layer perceptron classifier
+clf = MLPClassifier(max_iter=1000, random_state=42)
+clf.fit(X_train, y_train)
 ```
 
 ```{=html}
@@ -1534,7 +1471,530 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-3);
 }
-</style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RandomForestClassifier(random_state=1234)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" checked><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RandomForestClassifier</div></div><div><a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.6/modules/generated/sklearn.ensemble.RandomForestClassifier.html">?<span>Documentation for RandomForestClassifier</span></a><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RandomForestClassifier(random_state=1234)</pre></div> </div></div></div></div>
+</style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>MLPClassifier(max_iter=1000, random_state=42)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" checked><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>MLPClassifier</div></div><div><a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.6/modules/generated/sklearn.neural_network.MLPClassifier.html">?<span>Documentation for MLPClassifier</span></a><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>MLPClassifier(max_iter=1000, random_state=42)</pre></div> </div></div></div></div>
+```
+
+``` python
+# Compute permutation importance on the test set
+result = permutation_importance(clf, X_test, y_test, n_repeats=10, random_state=123)
+
+# Display the mean importance for each feature
+print(result.importances_mean)
+```
+
+[0.07368421 0.02105263 0.62368421 0.21578947]
+
+</p>
+
+::::::::::::::::
+
+## Application
+
+Now we pick the 'Height' and 'Weight' columns from the patients data to predict the gender labels. We use a split of 4/5 of the data for training and 1/5 for testing.
+
+
+``` python
+df = read_csv('data/patients_data.csv')
+
+print(df.shape)
+
+# Convert pounds to kg and inches to cm:
+df['Weight'] = 0.454*df['Weight']
+df['Height'] = 2.540*df['Height']
+
+df.head(10)
+```
+
+``` output
+(100, 8)
+   Age  Height  Weight  Systolic  Diastolic  Smoker  Gender  Peak Flow
+0   38  180.34  79.904       124         93       1    Male        200
+1   43  175.26  74.002       109         77       0    Male        615
+2   38  162.56  59.474       125         83       0  Female        642
+3   40  170.18  60.382       117         75       0  Female        511
+4   49  162.56  54.026       122         80       0  Female        497
+5   46  172.72  64.468       121         70       0  Female        528
+6   33  162.56  64.468       130         88       1  Female        269
+7   40  172.72  81.720       115         82       0    Male        324
+8   28  172.72  83.082       115         78       0    Male        501
+9   31  167.64  59.928       118         86       0  Female        723
+```
+
+
+### **Prepare training data and labels**
+
+
+``` python
+# Extract data as numpy array
+df_np = df.to_numpy()
+
+# Pick a fraction of height and weight data as training data
+samples = 80
+
+X = df_np[:samples, [1, 2]]
+
+print(X.shape)
+```
+
+(80, 2)
+
+For the labels of the training data we convert the 'Male' and 'Female' strings to categorical values.
+
+
+``` python
+gender_boolean = df['Gender'] == 'Female'
+
+y = gender_boolean[:80]
+
+# printed as 0 and 1:
+
+y.astype('int')
+```
+
+0     0
+1     0
+2     1
+3     1
+4     1
+     ..
+75    0
+76    1
+77    0
+78    0
+79    1
+Name: Gender, Length: 80, dtype: int64
+
+### **Train classifier and predict**
+
+
+
+``` python
+from sklearn.ensemble import RandomForestClassifier
+
+seed(RANDOM_SEED)
+
+clf = RandomForestClassifier(random_state=RANDOM_SEED)
+
+clf.fit(X, y)
+```
+
+```{=html}
+<style>#sk-container-id-3 {
+  /* Definition of color scheme common for light and dark mode */
+  --sklearn-color-text: #000;
+  --sklearn-color-text-muted: #666;
+  --sklearn-color-line: gray;
+  /* Definition of color scheme for unfitted estimators */
+  --sklearn-color-unfitted-level-0: #fff5e6;
+  --sklearn-color-unfitted-level-1: #f6e4d2;
+  --sklearn-color-unfitted-level-2: #ffe0b3;
+  --sklearn-color-unfitted-level-3: chocolate;
+  /* Definition of color scheme for fitted estimators */
+  --sklearn-color-fitted-level-0: #f0f8ff;
+  --sklearn-color-fitted-level-1: #d4ebff;
+  --sklearn-color-fitted-level-2: #b3dbfd;
+  --sklearn-color-fitted-level-3: cornflowerblue;
+
+  /* Specific color for light theme */
+  --sklearn-color-text-on-default-background: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, black)));
+  --sklearn-color-background: var(--sg-background-color, var(--theme-background, var(--jp-layout-color0, white)));
+  --sklearn-color-border-box: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, black)));
+  --sklearn-color-icon: #696969;
+
+  @media (prefers-color-scheme: dark) {
+    /* Redefinition of color scheme for dark theme */
+    --sklearn-color-text-on-default-background: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, white)));
+    --sklearn-color-background: var(--sg-background-color, var(--theme-background, var(--jp-layout-color0, #111)));
+    --sklearn-color-border-box: var(--sg-text-color, var(--theme-code-foreground, var(--jp-content-font-color1, white)));
+    --sklearn-color-icon: #878787;
+  }
+}
+
+#sk-container-id-3 {
+  color: var(--sklearn-color-text);
+}
+
+#sk-container-id-3 pre {
+  padding: 0;
+}
+
+#sk-container-id-3 input.sk-hidden--visually {
+  border: 0;
+  clip: rect(1px 1px 1px 1px);
+  clip: rect(1px, 1px, 1px, 1px);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+#sk-container-id-3 div.sk-dashed-wrapped {
+  border: 1px dashed var(--sklearn-color-line);
+  margin: 0 0.4em 0.5em 0.4em;
+  box-sizing: border-box;
+  padding-bottom: 0.4em;
+  background-color: var(--sklearn-color-background);
+}
+
+#sk-container-id-3 div.sk-container {
+  /* jupyter's `normalize.less` sets `[hidden] { display: none; }`
+     but bootstrap.min.css set `[hidden] { display: none !important; }`
+     so we also need the `!important` here to be able to override the
+     default hidden behavior on the sphinx rendered scikit-learn.org.
+     See: https://github.com/scikit-learn/scikit-learn/issues/21755 */
+  display: inline-block !important;
+  position: relative;
+}
+
+#sk-container-id-3 div.sk-text-repr-fallback {
+  display: none;
+}
+
+div.sk-parallel-item,
+div.sk-serial,
+div.sk-item {
+  /* draw centered vertical line to link estimators */
+  background-image: linear-gradient(var(--sklearn-color-text-on-default-background), var(--sklearn-color-text-on-default-background));
+  background-size: 2px 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+/* Parallel-specific style estimator block */
+
+#sk-container-id-3 div.sk-parallel-item::after {
+  content: "";
+  width: 100%;
+  border-bottom: 2px solid var(--sklearn-color-text-on-default-background);
+  flex-grow: 1;
+}
+
+#sk-container-id-3 div.sk-parallel {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background-color: var(--sklearn-color-background);
+  position: relative;
+}
+
+#sk-container-id-3 div.sk-parallel-item {
+  display: flex;
+  flex-direction: column;
+}
+
+#sk-container-id-3 div.sk-parallel-item:first-child::after {
+  align-self: flex-end;
+  width: 50%;
+}
+
+#sk-container-id-3 div.sk-parallel-item:last-child::after {
+  align-self: flex-start;
+  width: 50%;
+}
+
+#sk-container-id-3 div.sk-parallel-item:only-child::after {
+  width: 0;
+}
+
+/* Serial-specific style estimator block */
+
+#sk-container-id-3 div.sk-serial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--sklearn-color-background);
+  padding-right: 1em;
+  padding-left: 1em;
+}
+
+
+/* Toggleable style: style used for estimator/Pipeline/ColumnTransformer box that is
+clickable and can be expanded/collapsed.
+- Pipeline and ColumnTransformer use this feature and define the default style
+- Estimators will overwrite some part of the style using the `sk-estimator` class
+*/
+
+/* Pipeline and ColumnTransformer style (default) */
+
+#sk-container-id-3 div.sk-toggleable {
+  /* Default theme specific background. It is overwritten whether we have a
+  specific estimator or a Pipeline/ColumnTransformer */
+  background-color: var(--sklearn-color-background);
+}
+
+/* Toggleable label */
+#sk-container-id-3 label.sk-toggleable__label {
+  cursor: pointer;
+  display: flex;
+  width: 100%;
+  margin-bottom: 0;
+  padding: 0.5em;
+  box-sizing: border-box;
+  text-align: center;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.5em;
+}
+
+#sk-container-id-3 label.sk-toggleable__label .caption {
+  font-size: 0.6rem;
+  font-weight: lighter;
+  color: var(--sklearn-color-text-muted);
+}
+
+#sk-container-id-3 label.sk-toggleable__label-arrow:before {
+  /* Arrow on the left of the label */
+  content: "▸";
+  float: left;
+  margin-right: 0.25em;
+  color: var(--sklearn-color-icon);
+}
+
+#sk-container-id-3 label.sk-toggleable__label-arrow:hover:before {
+  color: var(--sklearn-color-text);
+}
+
+/* Toggleable content - dropdown */
+
+#sk-container-id-3 div.sk-toggleable__content {
+  max-height: 0;
+  max-width: 0;
+  overflow: hidden;
+  text-align: left;
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-0);
+}
+
+#sk-container-id-3 div.sk-toggleable__content.fitted {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-0);
+}
+
+#sk-container-id-3 div.sk-toggleable__content pre {
+  margin: 0.2em;
+  border-radius: 0.25em;
+  color: var(--sklearn-color-text);
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-0);
+}
+
+#sk-container-id-3 div.sk-toggleable__content.fitted pre {
+  /* unfitted */
+  background-color: var(--sklearn-color-fitted-level-0);
+}
+
+#sk-container-id-3 input.sk-toggleable__control:checked~div.sk-toggleable__content {
+  /* Expand drop-down */
+  max-height: 200px;
+  max-width: 100%;
+  overflow: auto;
+}
+
+#sk-container-id-3 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {
+  content: "▾";
+}
+
+/* Pipeline/ColumnTransformer-specific style */
+
+#sk-container-id-3 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {
+  color: var(--sklearn-color-text);
+  background-color: var(--sklearn-color-unfitted-level-2);
+}
+
+#sk-container-id-3 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+  background-color: var(--sklearn-color-fitted-level-2);
+}
+
+/* Estimator-specific style */
+
+/* Colorize estimator box */
+#sk-container-id-3 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-2);
+}
+
+#sk-container-id-3 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-2);
+}
+
+#sk-container-id-3 div.sk-label label.sk-toggleable__label,
+#sk-container-id-3 div.sk-label label {
+  /* The background is the default theme color */
+  color: var(--sklearn-color-text-on-default-background);
+}
+
+/* On hover, darken the color of the background */
+#sk-container-id-3 div.sk-label:hover label.sk-toggleable__label {
+  color: var(--sklearn-color-text);
+  background-color: var(--sklearn-color-unfitted-level-2);
+}
+
+/* Label box, darken color on hover, fitted */
+#sk-container-id-3 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {
+  color: var(--sklearn-color-text);
+  background-color: var(--sklearn-color-fitted-level-2);
+}
+
+/* Estimator label */
+
+#sk-container-id-3 div.sk-label label {
+  font-family: monospace;
+  font-weight: bold;
+  display: inline-block;
+  line-height: 1.2em;
+}
+
+#sk-container-id-3 div.sk-label-container {
+  text-align: center;
+}
+
+/* Estimator-specific */
+#sk-container-id-3 div.sk-estimator {
+  font-family: monospace;
+  border: 1px dotted var(--sklearn-color-border-box);
+  border-radius: 0.25em;
+  box-sizing: border-box;
+  margin-bottom: 0.5em;
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-0);
+}
+
+#sk-container-id-3 div.sk-estimator.fitted {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-0);
+}
+
+/* on hover */
+#sk-container-id-3 div.sk-estimator:hover {
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-2);
+}
+
+#sk-container-id-3 div.sk-estimator.fitted:hover {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-2);
+}
+
+/* Specification for estimator info (e.g. "i" and "?") */
+
+/* Common style for "i" and "?" */
+
+.sk-estimator-doc-link,
+a:link.sk-estimator-doc-link,
+a:visited.sk-estimator-doc-link {
+  float: right;
+  font-size: smaller;
+  line-height: 1em;
+  font-family: monospace;
+  background-color: var(--sklearn-color-background);
+  border-radius: 1em;
+  height: 1em;
+  width: 1em;
+  text-decoration: none !important;
+  margin-left: 0.5em;
+  text-align: center;
+  /* unfitted */
+  border: var(--sklearn-color-unfitted-level-1) 1pt solid;
+  color: var(--sklearn-color-unfitted-level-1);
+}
+
+.sk-estimator-doc-link.fitted,
+a:link.sk-estimator-doc-link.fitted,
+a:visited.sk-estimator-doc-link.fitted {
+  /* fitted */
+  border: var(--sklearn-color-fitted-level-1) 1pt solid;
+  color: var(--sklearn-color-fitted-level-1);
+}
+
+/* On hover */
+div.sk-estimator:hover .sk-estimator-doc-link:hover,
+.sk-estimator-doc-link:hover,
+div.sk-label-container:hover .sk-estimator-doc-link:hover,
+.sk-estimator-doc-link:hover {
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-3);
+  color: var(--sklearn-color-background);
+  text-decoration: none;
+}
+
+div.sk-estimator.fitted:hover .sk-estimator-doc-link.fitted:hover,
+.sk-estimator-doc-link.fitted:hover,
+div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
+.sk-estimator-doc-link.fitted:hover {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-3);
+  color: var(--sklearn-color-background);
+  text-decoration: none;
+}
+
+/* Span, style for the box shown on hovering the info icon */
+.sk-estimator-doc-link span {
+  display: none;
+  z-index: 9999;
+  position: relative;
+  font-weight: normal;
+  right: .2ex;
+  padding: .5ex;
+  margin: .5ex;
+  width: min-content;
+  min-width: 20ex;
+  max-width: 50ex;
+  color: var(--sklearn-color-text);
+  box-shadow: 2pt 2pt 4pt #999;
+  /* unfitted */
+  background: var(--sklearn-color-unfitted-level-0);
+  border: .5pt solid var(--sklearn-color-unfitted-level-3);
+}
+
+.sk-estimator-doc-link.fitted span {
+  /* fitted */
+  background: var(--sklearn-color-fitted-level-0);
+  border: var(--sklearn-color-fitted-level-3);
+}
+
+.sk-estimator-doc-link:hover span {
+  display: block;
+}
+
+/* "?"-specific style due to the `<a>` HTML tag */
+
+#sk-container-id-3 a.estimator_doc_link {
+  float: right;
+  font-size: 1rem;
+  line-height: 1em;
+  font-family: monospace;
+  background-color: var(--sklearn-color-background);
+  border-radius: 1rem;
+  height: 1rem;
+  width: 1rem;
+  text-decoration: none;
+  /* unfitted */
+  color: var(--sklearn-color-unfitted-level-1);
+  border: var(--sklearn-color-unfitted-level-1) 1pt solid;
+}
+
+#sk-container-id-3 a.estimator_doc_link.fitted {
+  /* fitted */
+  border: var(--sklearn-color-fitted-level-1) 1pt solid;
+  color: var(--sklearn-color-fitted-level-1);
+}
+
+/* On hover */
+#sk-container-id-3 a.estimator_doc_link:hover {
+  /* unfitted */
+  background-color: var(--sklearn-color-unfitted-level-3);
+  color: var(--sklearn-color-background);
+  text-decoration: none;
+}
+
+#sk-container-id-3 a.estimator_doc_link.fitted:hover {
+  /* fitted */
+  background-color: var(--sklearn-color-fitted-level-3);
+}
+</style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RandomForestClassifier(random_state=1234)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RandomForestClassifier</div></div><div><a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.6/modules/generated/sklearn.ensemble.RandomForestClassifier.html">?<span>Documentation for RandomForestClassifier</span></a><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RandomForestClassifier(random_state=1234)</pre></div> </div></div></div></div>
 ```
 
 We now take the remaining fifth of the data to predict.
@@ -1649,7 +2109,7 @@ ax[2].set_ylim(X2_min, X2_max);
 show()
 ```
 
-<img src="fig/01-classification_intro-rendered-unnamed-chunk-29-13.png" width="1440" style="display: block; margin: auto;" />
+<img src="fig/01-classification_intro-rendered-unnamed-chunk-30-13.png" width="1440" style="display: block; margin: auto;" />
 
 <p style='text-align: justify;'>
 The left panel shows the original data with labels as colours, i.e. the training data. Central panel shows the classified state space with the test samples as black dots in predicted category 'Female' and white dots in predicted category 'Male'. Right panel shows the state space with prediction probabilities with black for 'Female' and white for 'Male'. The red dot represents the simulated subject with 170cm and 70 kg (see below).
@@ -1687,7 +2147,7 @@ Predicted class: [False] Female
 Probability: 0.66
 ```
 
-<img src="fig/01-classification_intro-rendered-unnamed-chunk-30-15.png" width="672" style="display: block; margin: auto;" />
+<img src="fig/01-classification_intro-rendered-unnamed-chunk-31-15.png" width="672" style="display: block; margin: auto;" />
 
 <p style='text-align: justify;'>
 This shows that the predicted label is female but the probability is less than 70 % and, e.g. if a clinical decision was to be taken based on the outcome of the classification, it might suggest looking for additional evidence before the decision is made.
@@ -1720,7 +2180,7 @@ Features importances:
 Feature 1: 31.7%; Feature 2: 68.3%
 ```
 
-<img src="fig/01-classification_intro-rendered-unnamed-chunk-31-17.png" width="672" style="display: block; margin: auto;" />
+<img src="fig/01-classification_intro-rendered-unnamed-chunk-32-17.png" width="672" style="display: block; margin: auto;" />
 
 Feature Height contributes about one third and feature Weight about two thirds to the decisions.
 <p style='text-align: justify;'>
@@ -1738,19 +2198,44 @@ In the next lesson, we are going to test multiple classifiers and quantify their
 #### End of chapter Exercises
 
 <p style='text-align: justify;'>
-Repeat the training and prediction workflow as above for two other features in the data, namely: Systole and Diastole values. Use 70 training and 30 testing samples where the labels are assigned according to the condition: 0 if 'non-smoker', 1 if 'smoker'.
+Repeat the training and prediction workflow as described in the Classification lesson for two other independant features in the data, namely: 
+- Peak Flow 
+- Pulse Pressure _(Hint: use a column operation to add an additional 'PP' column to the data given the equation below)._
+
+\
+Pulse Pressure (PP) is a metric that represents the force the heart generates each time it contracts, and can be used to give clinical indicators of arterial stiffness or cardiovascular disease. \
+\
+The equation for pulse pressure is:
+
+$$
+PP = \text{Systolic BP} - \text{Diastolic BP}
+$$
+
+\
+Use 70 training and 30 testing samples where the labels are assigned according to the condition: 
+
+- 0 / False for ‘non-smoker’
+- 1 / True for ‘smoker’
 </p>
 
 Use the above code to:
 
 1. Train the random forest classifier.
 
-2. Create state space plots with scatter plot, categorical colouring, and probability contour plot.
+2. Create state space scatter plots, making use of categorical colouring. Include a probability contour plot.
 
-3. Compare the predicted and actual labels to check how well the trained model performed: how many of the 30 test data points are correctly predicted?
+3. Create a plot of the probability of the predicted label given a chosen pair of observations (features):
 
-4. Plot the feature importance to check how much the systolic and diastolic values contributed to the predictions.
-
+    - Choose a pair of observations that are at the classifcation boundary. _(Use the probability contour plot as a guide)_
+    - Print and plot the model probabilities for both labels
+    - Observe and comment on how well the model is able to predict observations that are on or near to the boundary _(Hint: Play around with multiple observations to get a feel for this)_
+    
+4. Create multiple scatter plots with predicted labels, true labels and use a Boolean array that compares predicted and true labels.
+    
+    - How many of the 30 test data points are correctly predicted?
+    - Which observations are incorrectly predicted, and why?
+    
+5. Plot feature importance to understand how much each feature contributes to the predictions.
 
 ::::::::::::::::::::: solution
 

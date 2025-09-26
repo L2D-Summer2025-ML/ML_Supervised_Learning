@@ -566,6 +566,42 @@ show()
 
 In this case, the predictions are based on a 61% contribution from feature 1 and a 38% contribution from feature 2.
 
+:::::::::::::::: callout
+## Note
+<p style='text-align: justify;'>
+It should be noted that the attribute `.feature_importances_` will not work if applied to a Multi-Layer Pereceptron (MLP) Classifier. This attribute actually only works with specific models such as random forest or decision trees.
+
+We can, however, make use of a permutation-based feature importance measure for the MLP classifier, instead. This can be accessed using the function `.permutation_importance`, which measures the decrease in the model's performance, each time a specific feature is shuffled; effectively measuring its importance to the resulting prediction.
+
+This attribute is available within scikit-learn's inspection sub-library, and assuming you have a trained classifier stored in a variable, you could use it, as follows:
+
+```{python}
+from sklearn.neural_network import MLPClassifier
+from sklearn.inspection import permutation_importance
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+# Load a simple dataset
+X, y = load_iris(return_X_y=True)
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+# Train a multi-layer perceptron classifier
+clf = MLPClassifier(max_iter=1000, random_state=42)
+clf.fit(X_train, y_train)
+
+# Compute permutation importance on the test set
+result = permutation_importance(clf, X_test, y_test, n_repeats=10, random_state=123)
+
+# Display the mean importance for each feature
+print(result.importances_mean)
+```
+
+</p>
+
+::::::::::::::::
+
 ## Application
 
 Now we pick the 'Height' and 'Weight' columns from the patients data to predict the gender labels. We use a split of 4/5 of the data for training and 1/5 for testing.
@@ -785,19 +821,44 @@ In the next lesson, we are going to test multiple classifiers and quantify their
 #### End of chapter Exercises
 
 <p style='text-align: justify;'>
-Repeat the training and prediction workflow as above for two other features in the data, namely: Systole and Diastole values. Use 70 training and 30 testing samples where the labels are assigned according to the condition: 0 if 'non-smoker', 1 if 'smoker'.
+Repeat the training and prediction workflow as described in the Classification lesson for two other independant features in the data, namely: 
+- Peak Flow 
+- Pulse Pressure _(Hint: use a column operation to add an additional 'PP' column to the data given the equation below)._
+
+\
+Pulse Pressure (PP) is a metric that represents the force the heart generates each time it contracts, and can be used to give clinical indicators of arterial stiffness or cardiovascular disease. \
+\
+The equation for pulse pressure is:
+
+$$
+PP = \text{Systolic BP} - \text{Diastolic BP}
+$$
+
+\
+Use 70 training and 30 testing samples where the labels are assigned according to the condition: 
+
+- 0 / False for ‘non-smoker’
+- 1 / True for ‘smoker’
 </p>
 
 Use the above code to:
 
 1. Train the random forest classifier.
 
-2. Create state space plots with scatter plot, categorical colouring, and probability contour plot.
+2. Create state space scatter plots, making use of categorical colouring. Include a probability contour plot.
 
-3. Compare the predicted and actual labels to check how well the trained model performed: how many of the 30 test data points are correctly predicted?
+3. Create a plot of the probability of the predicted label given a chosen pair of observations (features):
 
-4. Plot the feature importance to check how much the systolic and diastolic values contributed to the predictions.
-
+    - Choose a pair of observations that are at the classifcation boundary. _(Use the probability contour plot as a guide)_
+    - Print and plot the model probabilities for both labels
+    - Observe and comment on how well the model is able to predict observations that are on or near to the boundary _(Hint: Play around with multiple observations to get a feel for this)_
+    
+4. Create multiple scatter plots with predicted labels, true labels and use a Boolean array that compares predicted and true labels.
+    
+    - How many of the 30 test data points are correctly predicted?
+    - Which observations are incorrectly predicted, and why?
+    
+5. Plot feature importance to understand how much each feature contributes to the predictions.
 
 ::::::::::::::::::::: solution
 

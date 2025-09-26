@@ -768,36 +768,125 @@ See for example the discussion in part 2 of this [paper on predictive modelling 
 
 #### End of chapter Exercises
 
-As a suggestion, take the [breast cancer dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html#sklearn.datasets.load_breast_cancer).
+This assignment makes use of the [breast cancer dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html#sklearn.datasets.load_breast_cancer).
 
-1. Using all features create a summary boxplot to see the medians and distributions of the features.
+The breast cancer data can be imported from the scikit-learn datasets library.
 
-2. Train the above introduced classifiers using the train_test split to generate testing and training data and pick a small training set of e.g. 10% to make the classification task difficult. Obtain the recall scores to compare classifiers.
-
-3. Plot the confusion matrix for each case.
-
-4. Do a permutation test with default settings to get the p-values to reject the null hypothesis that the scores are compatible with random predictions. If it takes too long, reduce `n_permutations`.
-
-5. Repeat the workflow with normalised data and compare the results.
-
-6. Perform a hyperparameter tuning with the Random Forest classifier. For the optimal parameter settings, re-run the training and plot the feature importances to see the contributions of each feature to the outcome.
-
-
-The breast cancer data can be imported from the `scikit-learn`.
+- Both the dataset and the classifiers used in this assignment have been filled out already.
 
 ```{python}
 from sklearn.datasets import load_breast_cancer
 
 data = load_breast_cancer()
 
-X = data.data
-y = data.target
-
+X, y = data.data, data.target
 ```
 
-Feel free to try and do any other testing or plotting that you find important. This assignment is not meant to get a correct answer. It should help you to increase flexibility when facing a complex machine learning problem.
+```{python}
+from numpy import mgrid, linspace, c_, arange, mean, array
+from numpy.random import uniform, seed
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from mpl_toolkits import mplot3d
+from matplotlib.pyplot import subplots, axes, scatter, xticks, show
 
+from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import make_circles
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import recall_score
 
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC, LinearSVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+
+from sklearn.model_selection import permutation_test_score
+
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import GridSearchCV
+
+RANDOM_STATE = 111
+
+classifiers = {
+    'Random Forest': RandomForestClassifier(random_state=RANDOM_STATE),
+    'AdaBoost (Random Forest)': AdaBoostClassifier(RandomForestClassifier(random_state=RANDOM_STATE)),
+    'Extra Trees': ExtraTreesClassifier(random_state=RANDOM_STATE),
+    'AdaBoost (Extra Tree)': AdaBoostClassifier(ExtraTreesClassifier(random_state=RANDOM_STATE)),
+    'Decision Tree': DecisionTreeClassifier(random_state=RANDOM_STATE),
+    'SVC (RBF)': SVC(random_state=RANDOM_STATE),
+    'SVC (Linear)': LinearSVC(random_state=RANDOM_STATE, dual=False),
+    'Multi-layer Perceptron': MLPClassifier(max_iter=5000, random_state=RANDOM_STATE)
+    }
+```    
+
+**Note**: The linear Support Vector classifier is imported with the keyword argument dual=False. This is to reduce the number of warnings that occur when the classifier struggles to find a good solution. See the [documentation](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html) for more information.
+
+1. Explore the dataset to get an understanding of the features:
+
+- Print the names of the features.
+- Create a summary boxplot plot of all the features to see their medians and distributions.
+
+*(Hint! Look back to the Data Handling lessons for a reminder of how to do these).*
+
+2. Train the given classifiers and compare the results:
+
+- Split the dataset into train / test.
+  - Use the test_train_split() method from sklearn.
+  - Set the test dataset to 95% to make the classification task difficult.
+- Obtain the recall scores and print to screen formatted.
+
+3. Generate confusion matrices for each classifier:
+
+- Copy the plot_confusion_matrix() function from the ML3 lesson materials.
+- Use this function to create a multi-plot containing a confusion matrix per classifier.
+
+4. Perform a permutation test for each classifier:
+
+- Use the permutation_test_score() function.
+  - Set the scoring parameter to "accuracy".
+  - To increase the speed you can reduce n_permutations or you can set n_jobs to -1 to increase CPU core usage (see lesson).
+  
+- Plot the permutation scores with addtional lines indicating chance accuracy and the classifier score.
+
+5. Normalise the features and *repeat Questions 1 - 4*:
+
+- Use sklearn's Normalizer to augment the dataset.
+- Repeat the training, confusion matrices and permutation test.
+- Observe any differences / improvements.
+
+6. Perform hyperparameter tuning with the Random Forest classifier:
+
+A.
+
+Generate a Random Forest Classifier and train it using the previously used training split.
+
+- Print the score.
+
+B.
+
+Setup GridSearchCV to seach for the best parameters for the classifier.
+
+- Use StratifiedShuffleSplit for the cross-validation argument.
+- Include the parameters n_estimators, min_samples_split, max_depth, and max_features in the grid search.
+- Give at least 3 different parameters for each one.
+- See the [documentation](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) for the default values / options.
+
+C.
+
+Run the grid search with both the original dataset and the normalised dataset
+
+- Print the best parameters for both datasets.
+- Are there any differences between the datasets?
+
+**Optional Questions (Extra Practise):**
+
+7. `scikit-learn` has many pre-processing functions, each with their specific use case, such as [`StandardScaler`](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html), [`MinMaxScaler`](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html), and [`RobustScaler`](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html).
+
+- Read about their use cases in the linked documentation and try them out on the dataset.
+- Plot the augmented data.
+- Run and compare the parameter grid search for each dataset
+
+*Head to the Lecture_Resources folder to 01_scalers_demo.ipynb for examples of the three aforementioned pre-processing functions.*
 
 ::::::::::::::::::::: solution
 
